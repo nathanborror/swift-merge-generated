@@ -35,6 +35,7 @@ public struct MyersDiff<Element: Equatable> {
 
         // V[k] contains the furthest reaching x coordinate for diagonal k
         var v = [Int: Int]()
+        v[1] = 0
 
         // Store the history of V for each edit distance d
         var trace: [[Int: Int]] = []
@@ -43,46 +44,26 @@ public struct MyersDiff<Element: Equatable> {
         for d in 0...max {
             trace.append(v)
 
-            let minK = -d
-            let maxK = d
-
-            var k = minK
-            while k <= maxK {
-                defer { k += 2 }
-
-                // Determine if we should move down or right
-                let moveDown: Bool
-                if k == minK {
-                    moveDown = true
-                } else if k == maxK {
-                    moveDown = false
+            for k in stride(from: -d, through: d, by: 2) {
+                // Determine if we should move down (insert) or right (delete)
+                var x: Int
+                if k == -d || (k != d && (v[k - 1] ?? 0) < (v[k + 1] ?? 0)) {
+                    // Move down (insert from modified)
+                    x = v[k + 1] ?? 0
                 } else {
-                    // Choose the path with the furthest reaching x
-                    let down = v[k - 1] ?? 0
-                    let right = v[k + 1] ?? 0
-                    moveDown = down < right
-                }
-
-                // Calculate the starting position
-                let x: Int
-                if moveDown {
-                    x = v[k - 1] ?? 0
-                } else {
-                    x = (v[k + 1] ?? 0) + 1
+                    // Move right (delete from original)
+                    x = (v[k - 1] ?? 0) + 1
                 }
 
                 var y = x - k
 
                 // Follow diagonal matches as far as possible
                 while x < n && y < m && original[x] == modified[y] {
-                    let nextX = x + 1
-                    let nextY = y + 1
-                    y = nextY
-                    v[k] = nextX
+                    x += 1
+                    y += 1
                 }
 
                 v[k] = x
-                y = x - k
 
                 // Check if we've reached the end
                 if x >= n && y >= m {
@@ -107,14 +88,10 @@ public struct MyersDiff<Element: Equatable> {
 
             // Determine the previous k
             let prevK: Int
-            if k == -d {
+            if k == -d || (k != d && (v[k - 1] ?? 0) < (v[k + 1] ?? 0)) {
                 prevK = k + 1
-            } else if k == d {
-                prevK = k - 1
             } else {
-                let down = v[k - 1] ?? 0
-                let right = v[k + 1] ?? 0
-                prevK = down < right ? k + 1 : k - 1
+                prevK = k - 1
             }
 
             let prevX = v[prevK] ?? 0
@@ -130,11 +107,11 @@ public struct MyersDiff<Element: Equatable> {
             // Record the edit operation
             if d > 0 {
                 if x == prevX {
-                    // Insert
+                    // We moved down, so this was an insert
                     y -= 1
                     changes.append(.insert(index: y, element: modified[y]))
                 } else {
-                    // Delete
+                    // We moved right, so this was a delete
                     x -= 1
                     changes.append(.delete(index: x, element: original[x]))
                 }
