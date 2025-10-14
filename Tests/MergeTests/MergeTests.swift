@@ -117,8 +117,14 @@ struct MergeTests {
             return
         }
 
-        #expect(merged.contains("function greet(name)"))
-        #expect(merged.contains("Beautiful"))
+        let expected = """
+            function greet(name) {
+              console.log("Hello");
+              console.log("Beautiful");
+              console.log("World");
+            }
+            """
+        #expect(merged == expected)
     }
 
     @Test("String merge conflict case")
