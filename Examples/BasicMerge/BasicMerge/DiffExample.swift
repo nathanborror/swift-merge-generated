@@ -1,6 +1,55 @@
 import SwiftUI
 import Merge
 
+struct DiffExample: View {
+    @State var original = """
+    import Foundation
+    
+    struct User {
+        let name: String
+        let age: Int
+    }
+    """
+
+    @State var modified = """
+    import SwiftUI
+    
+    struct User {
+        let name: String
+        let email: String
+        let age: Int
+    }
+    """
+
+    var body: some View {
+        VSplitView {
+            HStack(spacing: 0) {
+                VStack(alignment: .leading) {
+                    Text("Original")
+                        .modifier(HeadingModifier())
+                    TextEditor(text: $original)
+                        .modifier(ContentModifier())
+                }
+                Divider()
+                VStack {
+                    Text("Modified")
+                        .modifier(HeadingModifier())
+                    TextEditor(text: $modified)
+                        .modifier(ContentModifier())
+                }
+            }
+            .frame(minHeight: 100)
+
+            ScrollView {
+                DiffView(
+                    originalFile: original,
+                    modifiedFile: modified
+                )
+            }
+        }
+    }
+}
+
 struct DiffView: View {
     let originalFile: String
     let modifiedFile: String
@@ -33,11 +82,10 @@ struct DiffView: View {
                     .padding(.horizontal, 12)
                     .padding(.vertical, 2)
                     .background(line.backgroundColor)
-                    .font(.system(.subheadline, design: .monospaced))
                 }
             }
         }
-        .background(Color(nsColor: .textBackgroundColor))
+        .font(.system(.subheadline, design: .monospaced))
         .task(id: originalFile+modifiedFile) {
             handleCompute()
         }
